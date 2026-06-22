@@ -2,7 +2,7 @@
 
 A modern, colorful web application for splitting bills and managing shared expenses among groups. Perfect for roommates, friends, travel groups, or any group that needs to track who owes whom.
 
-![Laravel](https://img.shields.io/badge/Laravel-11-FF2D20?style=flat-square&logo=laravel)
+![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?style=flat-square&logo=laravel)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.1-06B6D4?style=flat-square&logo=tailwindcss)
 ![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=flat-square&logo=php)
 ![MySQL](https://img.shields.io/badge/MySQL-5.7%2B-4479A1?style=flat-square&logo=mysql)
@@ -182,7 +182,7 @@ Visit `http://localhost:8000` in your browser.
 - **Vite** - Fast build tool with hot module replacement
 
 ### Backend
-- **Laravel 11** - PHP web framework
+- **Laravel 13** - PHP web framework
 - **Eloquent ORM** - Database abstraction
 - **Form Requests** - Built-in validation
 - **Services** - Business logic separation
