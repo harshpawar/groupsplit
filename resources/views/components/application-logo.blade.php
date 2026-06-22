@@ -1,0 +1,1 @@
+    <img src="{{ asset('images/logo-t.png') }}" alt="GroupSplit Logo" class="w-full h-auto" style="height: 50px; width: 50px;">
