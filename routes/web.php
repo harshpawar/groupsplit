@@ -21,8 +21,8 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    Route::resource('groups', GroupController::class);
     Route::get('groups/search-members', [GroupController::class, 'searchMembers'])->name('groups.search-members');
+    Route::resource('groups', GroupController::class);
     Route::get('groups/{group}/bills/create', [BillController::class, 'create'])->name('groups.bills.create');
     Route::post('groups/{group}/bills', [BillController::class, 'store'])->name('groups.bills.store');
     Route::get('bills/{bill}', [BillController::class, 'show'])->name('bills.show');

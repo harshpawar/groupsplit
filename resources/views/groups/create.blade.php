@@ -181,11 +181,11 @@
                                 .map(u => u.mobile)
                                 .join('\n');
                             
-                            if (mobileNumbersField.value.trim()) {
-                                mobileNumbersField.value = mobileNumbersField.value.trim() + '\n' + mobiles;
-                            } else {
+                            // if (mobileNumbersField.value.trim()) {
+                            //     mobileNumbersField.value = mobileNumbersField.value.trim() + '\n' + mobiles;
+                            // } else {
                                 mobileNumbersField.value = mobiles;
-                            }
+                            // }
                         }
                     </script>
                 </div>
