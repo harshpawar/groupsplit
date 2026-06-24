@@ -1,10 +1,14 @@
 <?php
 
+use App\Enums\PaymentStatus;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\JoinGroupController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Models\BillSplit;
+use App\Models\Group;
+use App\Models\Payment;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -17,7 +21,47 @@ Route::get('/join/{token}', [JoinGroupController::class, 'show'])->name('groups.
 Route::post('/join/{token}', [JoinGroupController::class, 'store'])->middleware('auth')->name('groups.join.store');
 
 Route::get('/dashboard', function () {
-    return redirect()->route('groups.index');
+    $user = auth()->user();
+
+    $groupIds = $user->administeredGroups()->pluck('id')
+        ->merge($user->groupMemberships()->pluck('group_id'))
+        ->filter()
+        ->unique();
+
+    $groups = Group::whereIn('id', $groupIds)
+        ->with(['members.user', 'bills.splits'])
+        ->withCount('bills')
+        ->get();
+
+    $userSplits = BillSplit::where('user_id', $user->id)
+        ->with(['bill.group', 'payments'])
+        ->get();
+
+    $remainingToSettle = $userSplits->sum(fn ($split) => max(0, (float) $split->share_amount - (float) $split->approved_amount));
+    $totalPaid = $userSplits->sum(fn ($split) => (float) $split->approved_amount);
+    $pendingSplits = $userSplits->filter(fn ($split) => $split->status->value !== 'settled')->count();
+    $settledSplits = $userSplits->count() - $pendingSplits;
+    $pendingPayments = Payment::where('user_id', $user->id)->where('status', PaymentStatus::Pending)->count();
+    $unsettledGroups = $groups->filter(fn ($group) => ! $group->isSettled())->count();
+    $settledGroups = $groups->count() - $unsettledGroups;
+    $totalBills = $groups->sum('bills_count');
+    $totalMembers = $groups->sum(fn ($group) => $group->members->count());
+    $needsAttentionGroups = $groups->filter(fn ($group) => ! $group->isSettled())->take(4);
+
+    return view('dashboard', compact(
+        'groups',
+        'userSplits',
+        'remainingToSettle',
+        'totalPaid',
+        'pendingSplits',
+        'settledSplits',
+        'pendingPayments',
+        'unsettledGroups',
+        'settledGroups',
+        'totalBills',
+        'totalMembers',
+        'needsAttentionGroups',
+    ));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
