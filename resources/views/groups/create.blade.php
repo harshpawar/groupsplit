@@ -37,10 +37,20 @@
                         <div>
                             <div class="flex items-center justify-between mb-3">
                                 <x-input-label for="search_query" value="Add Members" />
-                                <span class="text-xs text-gray-500">Search by name or mobile</span>
+                                <button
+                                    id="open_add_member_modal"
+                                    type="button"
+                                    class="inline-flex items-center gap-2 rounded-lg border-2 border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:border-blue-400 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                >
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    Add Member
+                                </button>
                             </div>
+                            <span class="text-xs text-gray-500">Search by name or mobile</span>
                             
-                            <div class="space-y-3">
+                            <div class="space-y-3 mt-3">
                                 <div class="relative">
                                     <input 
                                         id="search_query" 
@@ -83,15 +93,99 @@
                         </div>
                     </form>
 
+                    <div id="add_member_modal" class="fixed inset-0 z-50 hidden bg-slate-900/60">
+                        <div class="flex min-h-full items-center justify-center p-4">
+                            <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-xl font-bold text-gray-900">Add New Member</h3>
+                                    <button id="close_add_member_modal" type="button" class="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700" aria-label="Close add member dialog">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <form id="add_member_form" class="mt-5 space-y-4">
+                                    <div>
+                                        <label for="new_member_name" class="block text-sm font-medium text-gray-700">Name</label>
+                                        <input id="new_member_name" name="new_member_name" type="text" required class="mt-1 block w-full rounded-lg border-2 border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-300" placeholder="Enter member name">
+                                    </div>
+
+                                    <div>
+                                        <label for="new_member_mobile" class="block text-sm font-medium text-gray-700">Contact Number</label>
+                                        <input id="new_member_mobile" name="new_member_mobile" type="text" required class="mt-1 block w-full rounded-lg border-2 border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-300" placeholder="9876543210">
+                                    </div>
+
+                                    <div class="flex justify-end gap-3 pt-2">
+                                        <button id="cancel_add_member" type="button" class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100">Cancel</button>
+                                        <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">Add Member</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
                     <script>
                         const searchInput = document.getElementById('search_query');
                         const searchResults = document.getElementById('search_results');
                         const selectedMembers = document.getElementById('selected_members');
                         const mobileNumbersField = document.getElementById('mobile_numbers');
+                        const openAddMemberButton = document.getElementById('open_add_member_modal');
+                        const addMemberModal = document.getElementById('add_member_modal');
+                        const closeAddMemberButton = document.getElementById('close_add_member_modal');
+                        const cancelAddMemberButton = document.getElementById('cancel_add_member');
+                        const addMemberForm = document.getElementById('add_member_form');
+                        const newMemberNameInput = document.getElementById('new_member_name');
+                        const newMemberMobileInput = document.getElementById('new_member_mobile');
                         let selectedUsers = {};
+                        let customMembers = {};
+
+                        function closeAddMemberModal() {
+                            addMemberModal.classList.add('hidden');
+                            addMemberForm.reset();
+                        }
+
+                        openAddMemberButton.addEventListener('click', () => {
+                            addMemberModal.classList.remove('hidden');
+                            newMemberNameInput.focus();
+                        });
+
+                        closeAddMemberButton.addEventListener('click', closeAddMemberModal);
+                        cancelAddMemberButton.addEventListener('click', closeAddMemberModal);
+
+                        addMemberModal.addEventListener('click', (e) => {
+                            if (e.target === addMemberModal) {
+                                closeAddMemberModal();
+                            }
+                        });
+
+                        addMemberForm.addEventListener('submit', (e) => {
+                            e.preventDefault();
+
+                            const name = newMemberNameInput.value.trim();
+                            const mobile = newMemberMobileInput.value.trim();
+
+                            if (!name || !mobile) {
+                                return;
+                            }
+
+                            const normalizedMobile = mobile.replace(/\D/g, '');
+                            const customId = `custom-${normalizedMobile}`;
+
+                            customMembers[customId] = {
+                                id: customId,
+                                name,
+                                mobile: normalizedMobile,
+                            };
+
+                            closeAddMemberModal();
+                            searchInput.value = name;
+                            searchInput.dispatchEvent(new Event('input'));
+                        });
 
                         searchInput.addEventListener('input', async (e) => {
                             const query = e.target.value.trim();
+                            const queryLower = query.toLowerCase();
                             
                             if (query.length < 2) {
                                 searchResults.classList.add('hidden');
@@ -101,26 +195,35 @@
                             try {
                                 const response = await fetch(`{{ route('groups.search-members') }}?q=${encodeURIComponent(query)}`);
                                 const data = await response.json();
+                                const remoteUsers = data.users || [];
+                                const customMatches = Object.values(customMembers)
+                                    .filter(user => !selectedUsers[user.id] && (user.name.toLowerCase().includes(queryLower) || user.mobile.includes(query)))
+                                    .sort((a, b) => a.name.localeCompare(b.name));
+
+                                const combinedUsers = [...customMatches, ...remoteUsers];
                                 
-                                if (data.users.length === 0) {
+                                if (combinedUsers.length === 0) {
                                     searchResults.innerHTML = '<div class="p-3 text-gray-500 text-sm">No users found</div>';
                                     searchResults.classList.remove('hidden');
                                     return;
                                 }
 
-                                searchResults.innerHTML = data.users
+                                searchResults.innerHTML = combinedUsers
                                     .filter(user => !selectedUsers[user.id])
                                     .map(user => `
                                         <button type="button" 
                                             class="w-full text-left px-4 py-3 hover:bg-blue-50 border-b last:border-b-0 transition-colors flex justify-between items-center"
-                                            onclick="addMember(${user.id}, '${user.mobile.replace(/'/g, "\\'")}', '${user.name.replace(/'/g, "\\'")}'); event.preventDefault();">
+                                            onclick="addMember('${user.id}', '${user.mobile.replace(/'/g, "\\'")}', '${user.name.replace(/'/g, "\\'")}'); event.preventDefault();">
                                             <div>
                                                 <div class="font-medium text-gray-900">${user.name}</div>
                                                 <div class="text-sm text-gray-600">${user.mobile}</div>
                                             </div>
-                                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                            </svg>
+                                            <div class="flex items-center gap-2">
+                                                ${String(user.id).startsWith('custom-') ? '<span class="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700">New</span>' : ''}
+                                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                            </div>
                                         </button>
                                     `)
                                     .join('');
@@ -151,6 +254,7 @@
                         function updateSelectedMembers() {
                             if (Object.keys(selectedUsers).length === 0) {
                                 selectedMembers.innerHTML = '';
+                                mobileNumbersField.value = '';
                                 return;
                             }
 
@@ -167,7 +271,7 @@
                                                     </div>
                                                     <button type="button" 
                                                         class="text-red-600 hover:text-red-700 font-bold text-lg"
-                                                        onclick="removeMember(${userId}); event.preventDefault();">
+                                                        onclick="removeMember('${userId}'); event.preventDefault();">
                                                         ✕
                                                     </button>
                                                 </div>
@@ -180,12 +284,8 @@
                             const mobiles = Object.values(selectedUsers)
                                 .map(u => u.mobile)
                                 .join('\n');
-                            
-                            // if (mobileNumbersField.value.trim()) {
-                            //     mobileNumbersField.value = mobileNumbersField.value.trim() + '\n' + mobiles;
-                            // } else {
-                                mobileNumbersField.value = mobiles;
-                            // }
+
+                            mobileNumbersField.value = mobiles;
                         }
                     </script>
                 </div>
