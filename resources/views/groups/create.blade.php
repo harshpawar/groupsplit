@@ -35,7 +35,7 @@
                         </div>
 
                         <div>
-                            <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center justify-between mt-3">
                                 <x-input-label for="search_query" value="Add Members" />
                                 <button
                                     id="open_add_member_modal"
@@ -50,7 +50,7 @@
                             </div>
                             <span class="text-xs text-gray-500">Search by name or mobile</span>
                             
-                            <div class="space-y-3 mt-3">
+                            <div class="space-y-3">
                                 <div class="relative">
                                     <input 
                                         id="search_query" 
